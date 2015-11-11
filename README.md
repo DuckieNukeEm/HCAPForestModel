@@ -7,3 +7,6 @@ An R script that will read in HCAP data and perform Decision, Regression, and Fo
   
   This repository is host the R script to perform the analysis so that it may be reviewed and corrected by others. 
   
+
+Note about setup:
+  HCAPForestModel.R is used to set the working directory to a diffrent location than what is currently specified in RStudio. HCAPForestModel.R is saved in c:/scripts/R and the main R script will look for it and execute it. IF it can't find it, it will just use what the default working directory is. 
