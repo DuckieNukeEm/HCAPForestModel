@@ -3,6 +3,7 @@
 ################      Setting the Working Directory     ################
 ################                                        ################
 ########################################################################
+
   if(file.exists("c:/scripts/R/HCAPForestModel.R"))
   {source("c:/scripts/R/HCAPForestModel.R")}
   wd <- getwd()
@@ -16,19 +17,24 @@
 ########################################################################
   
  verbose = T #Do we want to explicity state what is going on or no
+
+  #only want to test the packages at first running of the script    
  if(!("first.run.for.packs" %in% ls())) {first.run.for.packs = "Y"}
+  
 ########################################################################
 ################                                        ################
 ################     Installing and loading the Packs   ################
 ################                                        ################
 ########################################################################
-  if (first.run.for.packs == "Y") {
+ 
+   if (first.run.for.packs == "Y") {
       pkg <- c("tree")
       inst <- pkg %in% installed.packages()  
       if(length(pkg[!inst]) > 0) install.packages(pkg[!inst])  
       lapply(pkg,library,character.only=TRUE)  
       rm(inst,pkg)  
       first.run.for.packs = "N"}
+  
 ########################################################################
 ################                                        ################
 ################       Reading in Varios Functions      ################
@@ -47,8 +53,56 @@
 vprint("Reading in the the Reduced file data")  
   hcap_r <- read.table(file.path(wddata, "FinalOutPutforTree-Reduced.csv"), header = T, sep = "|", stringsAsFactors = T)
 
-vpring("creating a names vector")    
+
+vprint("reading in the variable list that list the dep and indep vars")  
+  vars.hcap_r <- read.table(file.path(wddata,"hcap_r_names.csv"), sep = ",")
+
+########################################################################
+################                                        ################
+################           running single trees         ################
+################                                        ################
+########################################################################
+  
+    
+  
+vprint("creating a names vector")    
   names.hcap_r <- names(hcap_r)
   
-vprint("generating a tree on all the variables")
-  tree.hcap_r <- tree()
+
+vprint("generating a tree on the selected variables")
+  tree.formula <- create.formula(names.hcap_r[vars.hcap_r[,2] == 'd'], names.hcap_r[vars.hcap_r[,2] == 'i'])
+  tree.hcap_r <- tree(tree.formula, data = hcap_r)
+  
+vprint("plotting the tree")  
+  plot(tree.hcap_r)
+  text(tree.hcap_r, pretty= 0)
+  
+vprint("seeing if we need to prune")  
+  cv.hcap_r = cv.tree(tree.hcap_r) 
+  plot(cv.hcap_r$size, cv.hcap_r$dev, type="b")
+  
+vprint("if we need to prune")  
+  if(TRUE)#change to false if we don't need to prune
+    {
+        prune.tree.hcap_r = prune.tree(tree.hcap_r, best = 4)
+        plot(prune.tree.hcap_r)
+        text(prune.tree.hcap_r, pretty = 0)
+        tree.hcap_r <- prune.tree.hcap_r
+  }
+
+
+vprint("That's all fine and good, but let's test the validity of the tree")
+  #Creating a training set
+    hcap_r.train <- sample(1:nrow(hcap_r), nrow(hcap_r)/2)
+  #building the tree with training set
+    tree.train.hcap_r <-tree(tree.formula, data = hcap_r, subset = hcap_r.train)
+  # predicting the values using the testing set (the other half)
+    pred.hcap_r = predict(tree.hcap_r, newdata = hcap_r[-hcap_r.train,])
+    actual.hcap_r = hcap_r[-hcap_r.train,which(vars.hcap_r[,2] == 'd') ]
+  #plotting the predicated values with the actual values
+    plot(pred.hcap_r, actual.hcap_r)
+    abline(0,1)
+  #let's calculate the mean squared error
+    mean((pred.hcap_r - actual.hcap_r)^2)
+    # The sqrt root will tell use average diveregence
+    sqrt(mean((pred.hcap_r - actual.hcap_r)^2))
