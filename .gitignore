@@ -11,3 +11,7 @@
 # produced vignettes
 vignettes/*.html
 vignettes/*.pdf
+
+#ignore the data files
+Data/FinalOutPutforTree.csv
+Data/FinalOutPutforTree-Reduced.csv

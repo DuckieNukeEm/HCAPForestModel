@@ -28,7 +28,7 @@
 ########################################################################
  
    if (first.run.for.packs == "Y") {
-      pkg <- c("tree")
+      pkg <- c("tree","randomForest","gbm")
       inst <- pkg %in% installed.packages()  
       if(length(pkg[!inst]) > 0) install.packages(pkg[!inst])  
       lapply(pkg,library,character.only=TRUE)  
@@ -106,3 +106,32 @@ vprint("That's all fine and good, but let's test the validity of the tree")
     mean((pred.hcap_r - actual.hcap_r)^2)
     # The sqrt root will tell use average diveregence
     sqrt(mean((pred.hcap_r - actual.hcap_r)^2))
+    plot(tree.hcap_r)
+    importance(tree.hcap_r)
+    #basic COR matrix
+    #10-fold cros validation instead of test/train -> 50
+    #DSA
+    
+vprint("now creating a random forest")
+    rtree.hcap_r = randomForest(tree.formula, data = hcap_r,  subset = hcap_r.train, importance = TRUE)
+    
+    
+    result.data <- as.data.frame(matrix(0, ncol = 3, nrow = 1000))    
+    names(result.data) <- c("MSE","mtry","tree.size")
+    mtry.sample <- sample(1:16, 1000, replace = T)
+    tree.sample <- sample(100:2000, 1000, replace = T)
+    hcap_r.test = hcap_r[-hcap_r.train, names.hcap_r[vars.hcap_r[,2] == 'd']]
+    hcap_r.testset = hcap_r[-hcap_r.train]
+    i = 1
+    for (i in 1:1000)
+    {
+      vprint(i)
+      rtree.hcap_r = randomForest(tree.formula, data = hcap_r,  subset = hcap_r.train, mtry = mtry.sample[i], ntree=tree.sample[i])
+      yhat.bag = predict(rtree.hcap_r, hcap_r.test)
+      
+      result.data[i,] = c(mean((yhat.hcap_r-hcap_r.test)^2), mtry.sample[i], tree.sample[i])
+    }
+    
+    
+    
+    
