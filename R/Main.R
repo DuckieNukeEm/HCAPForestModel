@@ -28,7 +28,7 @@
 ########################################################################
  
    if (first.run.for.packs == "Y") {
-      pkg <- c("tree","randomForest","gbm")
+      pkg <- c("tree","randomForest","gbm","glmnet")
       inst <- pkg %in% installed.packages()  
       if(length(pkg[!inst]) > 0) install.packages(pkg[!inst])  
       lapply(pkg,library,character.only=TRUE)  
@@ -107,14 +107,15 @@ vprint("That's all fine and good, but let's test the validity of the tree")
     # The sqrt root will tell use average diveregence
     sqrt(mean((pred.hcap_r - actual.hcap_r)^2))
     plot(tree.hcap_r)
-    importance(tree.hcap_r)
+    text(tree.hcap_r, pretty= 0)
+  
     #basic COR matrix
     #10-fold cros validation instead of test/train -> 50
     #DSA
-    
+    #send Alberto An introduction to Statistical Learning
 vprint("now creating a random forest")
     rtree.hcap_r = randomForest(tree.formula, data = hcap_r,  subset = hcap_r.train, importance = TRUE)
-    
+    importance(rtree.hcap_r)
     
     result.data <- as.data.frame(matrix(0, ncol = 3, nrow = 1000))    
     names(result.data) <- c("MSE","mtry","tree.size")
@@ -133,5 +134,25 @@ vprint("now creating a random forest")
     }
     
     
+    #Next Steps
+      #Reduced Correlated Variables
+    #10 - fold cross validation method
+    #external => Internal 
+    #glmNet, (R- Package, looks at reducing variable space)
+      #random forest first then glmnet
+      #or both then cross validation and test MSE
     
+    #good source from Berkley
     
+    #Next  
+      #NSLEPerSqrFoot
+        #exclude anything to do with Customers
+        #all external Variables
+          #health char
+          #econ char
+            #birth, Crime, GINI, Weather, 
+    
+    #create a variable that indicates if a store NSLEPerSqr Foot is outlyer High, nor, low
+          # <10% is lower
+          #higher then 90% is high
+          #exclude the two highest two stores.
