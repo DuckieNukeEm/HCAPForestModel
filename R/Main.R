@@ -4,8 +4,8 @@
 ################                                        ################
 ########################################################################
 
-  if(file.exists("c:/scripts/R/HCAPForestModel.R"))
-  {source("c:/scripts/R/HCAPForestModel.R")}
+  if(file.exists("c:/scripts/R/HCAPForecastModel.R"))
+  {source("c:/scripts/R/HCAPForecastModel.R")}
   wd <- getwd()
   wdcode <- file.path(wd, 'R')
   wddata <- file.path(wd, 'Data')
@@ -15,11 +15,14 @@
 ################     Defining Script Control Parms      ################
 ################                                        ################
 ########################################################################
-  
+    
  verbose = T #Do we want to explicity state what is going on or no
-
+  
+  
   #only want to test the packages at first running of the script    
- if(!("first.run.for.packs" %in% ls())) {first.run.for.packs = "Y"}
+ if(!("first.run.for.packs" %in% ls())) {
+   Starting.R.Var <- c(ls(),"Starting.R.Var")
+   first.run.for.packs = "Y"}
   
 ########################################################################
 ################                                        ################
@@ -50,27 +53,54 @@
 ################                                        ################
 ########################################################################
 
-vprint("Reading in the the Reduced file data")  
+if(FALSE)  
+{vprint("reading in Reduced file Data")
   hcap_r <- read.table(file.path(wddata, "FinalOutPutforTree-Reduced.csv"), header = T, sep = "|", stringsAsFactors = T)
+  vars.hcap_r <- read.table(file.path(wddata,"hcap_r_names.csv"), sep = ",",header = T)
+} else {
+    vprint("Reading in the full file data")
+  hcap <- read.table(file.path(wddata, "FinalOutPutforTree.csv"), header = T, sep = "|", stringsAsFactors = T)
+  vars.hcap_r <- read.table(file.path(wddata,"hcap_names.csv"), sep = ",",header = T)
+  
+   }
 
+#######################################################################
+###############                                        ################
+###############             cleaning the data          ################
+###############                                        ################
+#######################################################################  
 
-vprint("reading in the variable list that list the dep and indep vars")  
-  vars.hcap_r <- read.table(file.path(wddata,"hcap_r_names.csv"), sep = ",")
+ 
+  
+vprint("removing excessivley long factor variabls from Data.frames")
+  factor.length = sapply(hcap_r,level_length)
+  hcap_r = hcap_r[,factor.length <= 25]
+  vars.hcap_r <- vars.hcap_r[factor.length <= 25,]
+  rm(factor.length)
+  
+vprint("creating a names vector")    
+  names.hcap_r <- names(hcap_r) 
+  depn <- names.hcap_r[vars.hcap_r[,2] == 'd']
 
+vprint("Removing Depn Var Outliers")
+  boxplot_output <- boxplot(hcap_r[,depn])
+  hcap_r <- hcap_r[!(hcap_r[,depn] %in% t$out),]
+  rm(boxplot_output)
+  
+vprint("Adding in High Med Low Depn Var")
+  hcap_r$HMLDepn <- "M"
+  hcap_r[hcap_r[,depn]<=quantile(hcap_r[,depn],c(.1)),"HMLDepn"] <- "L"
+  hcap_r[hcap_r[,depn]>=quantile(hcap_r[,depn],c(.9)),"HMLDepn"] <- "H"
+  hcap_r[,"HMLDepn"] <- factor(hcap_r[,"HMLDepn"])
+  vars.hcap_r[nrow(vars.hcap_r)+1,] <- c("HMLDepn","i")
 ########################################################################
 ################                                        ################
 ################           running single trees         ################
 ################                                        ################
 ########################################################################
-  
-    
-  
-vprint("creating a names vector")    
-  names.hcap_r <- names(hcap_r)
-  
-
+ 
 vprint("generating a tree on the selected variables")
-  tree.formula <- create.formula(names.hcap_r[vars.hcap_r[,2] == 'd'], names.hcap_r[vars.hcap_r[,2] == 'i'])
+  tree.formula <- create.formula(names.hcap_r[vars.hcap_r[,2] == 'd'], names.hcap_r[vars.hcap_r[,2] == 'i'] )
   tree.hcap_r <- tree(tree.formula, data = hcap_r)
   
 vprint("plotting the tree")  
@@ -116,24 +146,9 @@ vprint("That's all fine and good, but let's test the validity of the tree")
 vprint("now creating a random forest")
     rtree.hcap_r = randomForest(tree.formula, data = hcap_r,  subset = hcap_r.train, importance = TRUE)
     importance(rtree.hcap_r)
+    varImpPlot(rtree.hcap_r)
     
-    result.data <- as.data.frame(matrix(0, ncol = 3, nrow = 1000))    
-    names(result.data) <- c("MSE","mtry","tree.size")
-    mtry.sample <- sample(1:16, 1000, replace = T)
-    tree.sample <- sample(100:2000, 1000, replace = T)
-    hcap_r.test = hcap_r[-hcap_r.train, names.hcap_r[vars.hcap_r[,2] == 'd']]
-    hcap_r.testset = hcap_r[-hcap_r.train]
-    i = 1
-    for (i in 1:1000)
-    {
-      vprint(i)
-      rtree.hcap_r = randomForest(tree.formula, data = hcap_r,  subset = hcap_r.train, mtry = mtry.sample[i], ntree=tree.sample[i])
-      yhat.bag = predict(rtree.hcap_r, hcap_r.test)
-      
-      result.data[i,] = c(mean((yhat.hcap_r-hcap_r.test)^2), mtry.sample[i], tree.sample[i])
-    }
-    
-    
+   
     #Next Steps
       #Reduced Correlated Variables
     #10 - fold cross validation method
