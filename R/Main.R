@@ -4,8 +4,8 @@
 ################                                        ################
 ########################################################################
 
-  if(file.exists("c:/scripts/R/HCAPForecastModel.R"))
-  {source("c:/scripts/R/HCAPForecastModel.R")}
+  if(file.exists("c:/scripts/R/HCAPForestModel.R"))
+  {source("c:/scripts/R/HCAPForestModel.R")}
   wd <- getwd()
   wdcode <- file.path(wd, 'R')
   wddata <- file.path(wd, 'Data')
@@ -42,7 +42,7 @@
 ################                                        ################
 ################       Reading in Varios Functions      ################
 ################                                        ################
-########################################################################
+#######################################################################
   
   source(file.path(wdcode, "HCAPFunctions.R"))
   
@@ -59,8 +59,8 @@ if(FALSE)
   vars.hcap_r <- read.table(file.path(wddata,"hcap_r_names.csv"), sep = ",",header = T)
 } else {
     vprint("Reading in the full file data")
-  hcap <- read.table(file.path(wddata, "FinalOutPutforTree.csv"), header = T, sep = "|", stringsAsFactors = T)
-  vars.hcap_r <- read.table(file.path(wddata,"hcap_names.csv"), sep = ",",header = T)
+  hcap_r <- read.csv(file.path(wddata, "FinalOutPutforTree.csv"), header = T, sep = "|", stringsAsFactors = T)
+  vars.hcap_r <- read.csv(file.path(wddata,"hcap_names.csv"), sep = ",",header = T, as.is = T)
   
    }
 
@@ -75,6 +75,8 @@ if(FALSE)
 vprint("removing excessivley long factor variabls from Data.frames")
   factor.length = sapply(hcap_r,level_length)
   hcap_r = hcap_r[,factor.length <= 25]
+  vprint("removing the following factors due to excessive level size")
+  vars.hcap_r[factor.length > 25,1]
   vars.hcap_r <- vars.hcap_r[factor.length <= 25,]
   rm(factor.length)
   
@@ -84,7 +86,7 @@ vprint("creating a names vector")
 
 vprint("Removing Depn Var Outliers")
   boxplot_output <- boxplot(hcap_r[,depn])
-  hcap_r <- hcap_r[!(hcap_r[,depn] %in% t$out),]
+  hcap_r <- hcap_r[!(hcap_r[,depn] %in% boxplot_output$out),]
   rm(boxplot_output)
   
 vprint("Adding in High Med Low Depn Var")
@@ -92,7 +94,8 @@ vprint("Adding in High Med Low Depn Var")
   hcap_r[hcap_r[,depn]<=quantile(hcap_r[,depn],c(.1)),"HMLDepn"] <- "L"
   hcap_r[hcap_r[,depn]>=quantile(hcap_r[,depn],c(.9)),"HMLDepn"] <- "H"
   hcap_r[,"HMLDepn"] <- factor(hcap_r[,"HMLDepn"])
-  vars.hcap_r[nrow(vars.hcap_r)+1,] <- c("HMLDepn","i")
+  vars.hcap_r[nrow(vars.hcap_r)+1,] <- c("HMLDepn",rep("i",ncol(vars.hcap_r)-1))
+vprint("Adding in ")
 ########################################################################
 ################                                        ################
 ################           running single trees         ################
@@ -144,7 +147,7 @@ vprint("That's all fine and good, but let's test the validity of the tree")
     #DSA
     #send Alberto An introduction to Statistical Learning
 vprint("now creating a random forest")
-    rtree.hcap_r = randomForest(tree.formula, data = hcap_r,  subset = hcap_r.train, importance = TRUE)
+    rtree.hcap_r = randomForest(tree.formula, data = hcap_r,  importance = TRUE)
     importance(rtree.hcap_r)
     varImpPlot(rtree.hcap_r)
     
@@ -159,15 +162,12 @@ vprint("now creating a random forest")
     
     #good source from Berkley
     
-    #Next  
-      #NSLEPerSqrFoot
-        #exclude anything to do with Customers
-        #all external Variables
-          #health char
-          #econ char
-            #birth, Crime, GINI, Weather, 
-    
+  #2015-11-23  
     #create a variable that indicates if a store NSLEPerSqr Foot is outlyer High, nor, low
           # <10% is lower
           #higher then 90% is high
           #exclude the two highest two stores.
+  #2015-11-30
+    #run correlation matrix on external var used
+    #Save the Tree/Plots/Corr and pass them to WMA
+    #get gmlNet to work for external variables | gaussian
