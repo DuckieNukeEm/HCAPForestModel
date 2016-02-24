@@ -1,0 +1,60 @@
+---
+title: "HCAP.txt"
+output: html_document
+---
+
+###HCAP DC Data Review
+
+Alright, going to do a quick review of the hcap data that was provided for DC's. 
+
+```{r, echo=FALSE}
+setwd('C:/Users/Asmodi/OneDrive/Code/Git/HCAPForestModel')
+wd <- getwd()
+data <- read.table(file.path(wd,'/Data/HCAP.txt'), header = T, sep = '\t')
+```
+
+let's take a look at the vars;
+
+```{r, echo = F}
+  names(data)
+```
+Going to strip off the last four variables as those are only relevant for DB reasons...Done. Let's take a little closer look at the variables
+```{r, echo = F}
+data <- data[,1:(ncol(data)-4)]
+str(data)
+```
+and a quick summary of the data
+```{r, echo = F}
+summary(data)
+print(paste(c("Number of complete cases", length(complete.cases(data))), collapse = " "))
+print(paste(c("number of records", nrow(data)),collapse =" "))
+```
+Number of unique...
+```{r, echo = F}
+print(paste(c("stores: ",length(unique(data$dc_nbr))), collapse = ""))
+print(paste(c("op_area_code: ",length(unique(data$op_area_code))), collapse = ""))
+print(paste(c("shift_code: ",length(unique(data$shift_code))), collapse = ""))
+print(paste(c("job_function_code: ",length(unique(data$job_function_code))), collapse = ""))
+print(paste(c("associates: ",length(unique(data$win_nbr))), collapse = ""))
+print(paste(c("shift_code: ",length(unique(data$shift_code))), collapse = ""))
+print(paste(c("skill_level_code: ",length(unique(data$skill_level_code))), collapse = ""))
+print(paste(c("days: ",length(unique(data$business_date))), collapse = ""))
+print(paste(c("production_qty: ",length(unique(data$production_qty))), collapse =
+""))
+print(paste(c("gaol_production_qty: ",length(unique(data$goal_production_qty))), collapse = ""))
+print(paste(c("direct_hour_qty: ",length(unique(data$direct_hour_qty))), collapse = ""))
+```
+----
+lets plot each one
+```{r, echo = F}
+plot(data)
+print("well....that's not very usefull, let's cut out some of the non essentails")
+plot(data[,-c(2,5,8,9,12,15)])
+```
+
+
+
+
+
+
+
