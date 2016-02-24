@@ -8,7 +8,7 @@ output: html_document
 Alright, going to do a quick review of the hcap data that was provided for DC's. 
 
 ```{r, echo=FALSE}
-setwd('C:/Users/Asmodi/OneDrive/Code/Git/HCAPForestModel')
+setwd('C:/')
 wd <- getwd()
 data <- read.table(file.path(wd,'/Data/HCAP.txt'), header = T, sep = '\t')
 ```
